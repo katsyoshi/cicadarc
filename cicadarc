@@ -1,0 +1,85 @@
+# source "cicadaenv"
+
+if echo "$(uname)" | grep -e '*BSD|Darwin'
+  if type gnuls > /dev/null 2>&1
+    alias ls="gnuls -F --color=auto"
+  elif type gls > /dev/null 2>&1
+     alias ls="gls -F --color=auto"
+  else
+    alias ls="ls -FG"
+  fi
+else
+  lscmd="ls -F --color=auto"
+  alias ls="${lscmd}"
+  alias type="which"
+fi
+
+alias la="${lscmd} -lhA"
+alias ll="${lscmd} -lh"
+alias rm="rm -i"
+alias cp="cp -i"
+alias mv="mv -i"
+
+## tmuxがあればログイン時にtmuxを立ちあげる
+if type tmux > /dev/null 2>&1
+  if echo "${TMUX}" | grep /^$/ > /dev/null 2>&1
+    if echo "$(tmux ls)" | grep /^$/ > /dev/null 2>&1
+        tmux
+    else
+        tmux attach
+    fi
+  fi
+
+  ## ssh接続終了時tmuxのwindow nameを変更
+  function ssh() {
+    local window_name=$(tmux display -p '#{window_name}')
+    command ssh $@
+    tmux rename-window $window_name
+  }
+fi
+
+echo hoge
+
+## htopがあればtopを変更
+if type htop > /dev/null 2>&1
+  alias top="htop"
+fi
+
+## git aliases
+if type git > /dev/null 2>&1
+  if type hub > /dev/null 2>&1
+    alias git='hub'
+  fi
+  alias gs='git status --short'
+  alias ggc='git gc'
+  alias got='git co'
+fi
+
+if type emacs > /dev/null 2>&1
+  if type emacsclient > /dev/null 2>&1
+    alias emacs="emacsclient -nw"
+  fi
+fi
+
+if type fd > /dev/null 2>&1
+  function fd-and-cd () {
+    cd "$(fd $1 -t d|hs)"
+  }
+
+  function _shortcut-fd-and-cd () {
+    fd-and-cd .
+  }
+
+  function hs-history-backward-selection() {
+    BUFFER="$(history -n 1 | ${TAIL_CMD} | awk '!a[$0]++' | sed -e 's/\s\s*/ /g' | sort | uniq | hs)"
+    CURSOR=$#BUFFER
+  }
+  function hs-history-forward-selection() {
+    BUFFER="$(history -n 1 | awk '!a[$0]++' | hs)"
+    CURSOR=$#BUFFER
+  }
+
+  bindkey "^R" hs-history-backward-selection
+  bindkey "^S" hs-history-forward-selection
+  bindkey "^X^F" _shortcut-fd-and-cd
+fi
